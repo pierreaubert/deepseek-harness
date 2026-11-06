@@ -17,12 +17,13 @@ import type { PiAiReplayResponse } from '../src/replay.ts'
 import { assemble, type AssembledResult } from './assemble.ts'
 
 interface ProviderCase {
-  provider: 'openai' | 'anthropic'
-  api: 'openai-responses' | 'anthropic-messages'
+  provider: 'openai' | 'anthropic' | 'lyceum'
+  api: 'openai-responses' | 'anthropic-messages' | 'openai-completions'
   model: string
   apiKey?: string
   baseURL?: string
   headers?: Record<string, string>
+  supportsImage?: true
 }
 
 const openAIBaseURL = process.env.DSH_PI_AI_OPENAI_BASE_URL
@@ -48,6 +49,14 @@ const providerCases: ProviderCase[] = [
     model: process.env.DSH_PI_AI_ANTHROPIC_MODEL ?? 'claude-opus-4-8',
     ...anthropicApiKey === undefined ? {} : { apiKey: anthropicApiKey },
     ...anthropicBaseURL === undefined ? {} : { baseURL: anthropicBaseURL },
+    supportsImage: true,
+  },
+  {
+    provider: 'lyceum',
+    api: 'openai-completions',
+    model: 'moonshotai/kimi-k3.1-pro',
+    ...process.env.LYCEUM_API_KEY === undefined ? {} : { apiKey: process.env.LYCEUM_API_KEY },
+    supportsImage: true,
   },
 ]
 
@@ -224,8 +233,8 @@ for (const profile of providerCases) {
         expect(expectNativeReplay(second, profile).stopReason).toBe('stop')
       })
 
-      if (profile.provider === 'anthropic') {
-        it('sends a real image through the authenticated Anthropic visual path', async () => {
+      if (profile.supportsImage) {
+        it('sends a real image through the authenticated provider visual path', async () => {
           const data = new Uint8Array(await readFile(
             new URL('./fixtures/qr-code.png', import.meta.url),
           ))
@@ -251,7 +260,7 @@ for (const profile of providerCases) {
               ],
               source: { kind: 'model', provider: 'deepseek-official', model: 'deepseek-v4-flash' },
             })],
-            maxTokens: 256,
+            maxTokens: 2048,
           })
 
           expectFinish(result, 'stop')

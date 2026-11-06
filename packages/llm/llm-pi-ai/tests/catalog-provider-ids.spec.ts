@@ -7,7 +7,10 @@ import { describe, expect, it, vi } from 'vitest'
 // no catalog data, such as the browser-worker preview).
 vi.mock('@earendil-works/pi-ai/providers/all', async importOriginal => ({
   ...await importOriginal<typeof import('@earendil-works/pi-ai/providers/all')>(),
-  builtinProviders: () => ['chat-provider', 'classifier-provider', 'uncataloged-provider'].map(id => ({ id })),
+  builtinProviders: () => ['chat-provider', 'classifier-provider', 'uncataloged-provider'].map(id => ({
+    id,
+    getModels: () => id === 'chat-provider' ? [{ id: 'chat-model' }] : [],
+  })),
   getBuiltinModels: (provider: string) => provider === 'chat-provider' ? [{ id: 'chat-model' }] : [],
   getAllBuiltinModels: (provider: string) => {
     if (provider === 'chat-provider') return [{ id: 'chat-model' }]
@@ -20,13 +23,13 @@ import { catalogModels, catalogProvider, catalogProviderIds } from '../src/catal
 
 describe('catalog provider ids', () => {
   it('drops a provider that lists only non-chat models and keeps one that lists none', () => {
-    expect(catalogProviderIds()).toEqual(['chat-provider', 'uncataloged-provider'])
+    expect(catalogProviderIds()).toEqual(['chat-provider', 'uncataloged-provider', 'lyceum'])
   })
 
   it('answers no catalog provider or models for the provider it drops', () => {
     expect(catalogProvider('classifier-provider')).toBeUndefined()
     expect(catalogModels('classifier-provider').size).toBe(0)
-    expect(catalogProvider('uncataloged-provider')).toEqual({ id: 'uncataloged-provider' })
+    expect(catalogProvider('uncataloged-provider')).toMatchObject({ id: 'uncataloged-provider' })
     expect([...catalogModels('chat-provider').keys()]).toEqual(['chat-model'])
   })
 })
