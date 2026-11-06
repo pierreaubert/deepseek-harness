@@ -158,9 +158,9 @@ function directoryEntries(
       displayName,
       settingsNs,
       settingsPath: ['providers', provider],
-      // Membership of the installed catalog, not of the settings document:
-      // narrowing a shipped provider's models stores a profile too, and that
-      // route is still one pi-ai knows.
+      // Membership of a provider catalog, not of the settings document:
+      // narrowing a supplied provider's models stores a profile too, and that
+      // route is still one the adapter knows.
       declared: installed === undefined,
       ...installed === undefined ? {} : providerDefaultsOf(installed),
       ...error === undefined ? {} : { error },

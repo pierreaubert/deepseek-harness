@@ -1,4 +1,4 @@
-/** Generate display metadata through pi-ai's public catalog and auth context. */
+/** Generate display metadata through public provider catalogs and auth contexts. */
 
 import { execFileSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
 import type { Provider } from '@earendil-works/pi-ai'
 import { builtinProviders } from '@earendil-works/pi-ai/providers/all'
+import { SUPPLEMENTAL_PROVIDERS } from '../src/supplemental-providers.ts'
 
 interface ProviderData {
   env: readonly string[]
@@ -86,10 +87,12 @@ export async function resolverEnv(provider: Provider): Promise<string[]> {
 
 /**
  * Generate metadata without resolving real credentials or streaming a request.
- * @param providers - Public installed catalog, or isolated providers for verification.
+ * @param providers - Public installed and DSH-supplied catalogs, or isolated providers for verification.
  * @returns Display metadata keyed by provider id.
  */
-export async function generateProviderData(providers: readonly Provider[] = builtinProviders()): Promise<Record<string, ProviderData>> {
+export async function generateProviderData(
+  providers: readonly Provider[] = [...builtinProviders(), ...SUPPLEMENTAL_PROVIDERS],
+): Promise<Record<string, ProviderData>> {
   const data: Record<string, ProviderData> = {}
   for (const provider of providers) {
     let env: readonly string[]
@@ -125,7 +128,7 @@ export async function generateProviderData(providers: readonly Provider[] = buil
  * @param cached - Validate the staged file instead; never write or stage files.
  */
 export async function syncProviderData(check: boolean, cached = false): Promise<void> {
-  const source = '/** Generated from the installed pi-ai catalog. Run pnpm gen-provider-data; do not edit. */\n\n'
+  const source = '/** Generated from the provider catalogs. Run pnpm gen-provider-data; do not edit. */\n\n'
     + "import type { BuiltinProvider } from '@earendil-works/pi-ai/providers/all'\n"
     + "import type { LlmConfigurableProvider } from '@deepseek-ai/dsh-llm'\n\n"
     + "type ProviderData = Pick<LlmConfigurableProvider, 'defaultBaseURL' | 'baseURLEnv'> & { env: readonly string[] }\n\n"

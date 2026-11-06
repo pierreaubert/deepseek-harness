@@ -14,7 +14,7 @@ import { providerDefaultsOf } from '../src/provider-data.ts'
 describe('provider metadata', () => {
   it('matches every installed public resolver and catalog, including non-chat providers', async () => {
     expect(await generateProviderData()).toEqual(PROVIDER_DATA)
-    expect(Object.keys(PROVIDER_DATA)).toEqual(builtinProviders().map(provider => provider.id))
+    expect(Object.keys(PROVIDER_DATA)).toEqual([...builtinProviders().map(provider => provider.id), 'lyceum'])
   })
 
   it('checks the staged snapshot even when the working file is fresh, without changing either', () => {

@@ -1,4 +1,4 @@
-/** Generated from the installed pi-ai catalog. Run pnpm gen-provider-data; do not edit. */
+/** Generated from the provider catalogs. Run pnpm gen-provider-data; do not edit. */
 
 import type { BuiltinProvider } from '@earendil-works/pi-ai/providers/all'
 import type { LlmConfigurableProvider } from '@deepseek-ai/dsh-llm'
@@ -49,4 +49,5 @@ export const PROVIDER_DATA: Record<BuiltinProvider, ProviderData> & Partial<Reco
   'xiaomi-token-plan-sgp': { env: ['XIAOMI_TOKEN_PLAN_SGP_API_KEY'], defaultBaseURL: 'https://token-plan-sgp.xiaomimimo.com/v1' },
   'zai': { env: ['ZAI_API_KEY'], defaultBaseURL: 'https://api.z.ai/api/coding/paas/v4' },
   'zai-coding-cn': { env: ['ZAI_CODING_CN_API_KEY'], defaultBaseURL: 'https://open.bigmodel.cn/api/coding/paas/v4' },
+  'lyceum': { env: ['LYCEUM_API_KEY'], defaultBaseURL: 'https://api.lyceum.technology/openai/v1' },
 }
