@@ -121,6 +121,21 @@ describe('llm-pi-ai real dormant composition', () => {
     })
     expect(directory.find(entry => entry.provider === 'radius')?.defaultBaseURL).toBe('https://radius.pi.dev/v1')
     expect(directory.find(entry => entry.provider === 'opencode')?.defaultBaseURL).toBeUndefined()
+    expect(directory.find(entry => entry.provider === 'lyceum')).toMatchObject({
+      displayName: 'lyceum',
+      declared: false,
+      defaultBaseURL: 'https://api.lyceum.technology/openai/v1',
+      nativeAuth: { env: ['LYCEUM_API_KEY'], oauth: false },
+    })
+    await expect(ctx.llm.discoverModels('llm-pi-ai', { provider: 'lyceum' })).resolves.toEqual(
+      expect.arrayContaining([{
+        id: 'moonshotai/kimi-k3.1-pro',
+        name: 'Kimi K3.1 Pro',
+        contextWindow: 1_048_576,
+        maxTokens: 131_072,
+        inputModalities: ['text', 'image'],
+      }]),
+    )
 
     // Exactly what the web Models page leaves on disk.
     await writeFile(settingsPath, [
@@ -139,6 +154,36 @@ describe('llm-pi-ai real dormant composition', () => {
     const result = await assemble(ctx, { provider: 'deepseek', model: 'deepseek-flash', messages: [] })
     expect(result.message.content).toEqual([{ type: 'text', text: 'hello' }])
     expect(server.headers[0]?.authorization).toBe('Bearer key-from-store')
+  })
+
+  it('serves the Lyceum catalog through a Loader-mounted native route', async () => {
+    vi.stubEnv('LYCEUM_API_KEY', 'lyceum-native-key')
+    const server = await mockServer([{ events: textEvents }])
+    const { ctx, settingsPath } = await loadComposition()
+    await writeFile(settingsPath, [
+      '- id: llm-pi-ai',
+      '  config:',
+      '    providers:',
+      '      lyceum:',
+      `        baseURL: ${server.url}`,
+      '',
+    ].join('\n'))
+    await vi.waitFor(() => {
+      expect(ctx.llm.listProviders().map(provider => provider.id)).toEqual(['lyceum'])
+    }, { timeout: 5000 })
+
+    const result = await assemble(ctx, {
+      provider: 'lyceum',
+      model: 'moonshotai/kimi-k3.1-pro',
+      messages: [],
+      maxTokens: 64,
+    })
+    expect(result.finish).toEqual({ kind: 'stop' })
+    expect(result.message.content).toEqual([{ type: 'text', text: 'hello' }])
+    expect(server.requests[0]).toMatchObject({ model: 'moonshotai/kimi-k3.1-pro', max_tokens: 64 })
+    expect(server.requests[0]).not.toHaveProperty('max_completion_tokens')
+    expect(server.requests[0]).not.toHaveProperty('store')
+    expect(server.headers[0]?.authorization).toBe('Bearer lyceum-native-key')
   })
 
   it('offers OpenAI sign-in by API key only, while other subscription logins stay', async () => {

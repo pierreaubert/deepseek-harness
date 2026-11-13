@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`@deepseek-ai/dsh-llm-pi-ai` routes model requests to multiple pi-ai providers, OpenAI-compatible gateways, or self-hosted servers from one configuration. Installed pi-ai providers supply endpoint, protocol, and model-catalog defaults; custom routes can declare those values without code changes. Profiles and credentials are resolved for each request, so settings changes take effect on the next request without a restart. Supported providers can use stored OAuth or interactive-key sign-in with cross-process refresh locking. The package may start with no routes and activate when user settings add them.
+`@deepseek-ai/dsh-llm-pi-ai` routes model requests to pi-ai providers, OpenAI-compatible gateways, and self-hosted servers. Installed providers and DSH's bundled [Lyceum](https://lyceum.technology) definition supply endpoint, protocol, and model defaults; custom routes can declare those values without code changes. Lyceum uses `LYCEUM_API_KEY` and shares its chat catalog without a custom route. Profiles and credentials resolve per request, so settings changes take effect without a restart. Supported providers can use stored OAuth or interactive-key sign-in with cross-process refresh locking. The package may start without routes and activate when settings add them.
 
 ## Table of Contents
 
@@ -161,6 +161,7 @@ This event covers inference calls with or without a Session id, including auxili
 | [`src/config.ts`](src/config.ts) | Profile schema, resolution, and serviceability checks |
 | [`src/catalog.ts`](src/catalog.ts) | Installed-catalog integration and drift gates |
 | [`src/provider-data.ts`](src/provider-data.ts) | Generated authentication and endpoint metadata for configuration surfaces |
+| [`src/supplemental-providers.ts`](src/supplemental-providers.ts) | DSH-bundled provider definitions, including Lyceum authentication and chat models |
 | [`src/models.ts`](src/models.ts) | Model collections, static providers, and reasoning levels over narrow pi-ai entry points |
 | [`src/provider.ts`](src/provider.ts) | The supported-protocol table and provider construction |
 | [`src/context.ts`](src/context.ts) | Harness-to-pi-ai context conversion, image handling, replay restore |
@@ -170,7 +171,7 @@ This event covers inference calls with or without a Session id, including auxili
 
 ### Registration and directory
 
-The plugin declares every installed catalog provider it can authenticate in the configurable-provider directory, joined with every route the current profiles declare, so configuration surfaces can offer the full catalog before any route exists. A catalog provider whose catalog lists models but no chat model, such as one of classifier models alone, is left out and gets no sign-in flow, because this adapter dispatches chat requests only. Each entry carries `declared` — whether pi-ai ships nothing under that key — because only the adapter can distinguish a hand-declared route from a narrowed catalog route. A catalog entry carries `defaultBaseURL` for a fixed provider endpoint or a fixed endpoint shared by all its models, `baseURLEnv` for endpoint configuration variables, and `nativeAuth` for authentication variables and OAuth availability. Different model endpoints and unresolved URL templates are not presented as one fixed default. Route registration is atomic: a candidate set that collides with another adapter leaves the previous routes serving. A bare mount with zero routes is the dormant posture: nothing registers until the Config supplies profiles, and routes drop when it empties.
+The plugin declares every installed or DSH-supplied catalog provider it can authenticate in the configurable-provider directory, joined with every route the current profiles declare, so configuration surfaces can offer the full catalog before any route exists. A catalog provider whose catalog lists models but no chat model, such as one of classifier models alone, is left out and gets no sign-in flow, because this adapter dispatches chat requests only. Each entry carries `declared` — whether no provider catalog supplies that key — because only the adapter can distinguish a hand-declared route from a narrowed catalog route. A catalog entry carries `defaultBaseURL` for a fixed provider endpoint or a fixed endpoint shared by all its models, `baseURLEnv` for endpoint configuration variables, and `nativeAuth` for authentication variables and OAuth availability. Different model endpoints and unresolved URL templates are not presented as one fixed default. Route registration is atomic: a candidate set that collides with another adapter leaves the previous routes serving. A bare mount with zero routes is the dormant posture: nothing registers until the Config supplies profiles, and routes drop when it empties.
 
 <a id="generated-provider-metadata"></a>
 ### Generated provider metadata

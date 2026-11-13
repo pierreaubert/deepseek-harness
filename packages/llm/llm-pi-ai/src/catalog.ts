@@ -1,9 +1,9 @@
 /**
  * Materialization of one provider route's model catalog. The installed pi-ai
- * catalog supplies defaults keyed by model id, and a profile's own model
- * entries override them field by field, so a route naming a catalog provider
- * stays configuration-free while a route pi-ai has never heard of is fully
- * describable from `cordis.patch.yml`.
+ * catalog and DSH's supplemental provider definitions supply defaults keyed by
+ * model id, and a profile's own model entries override them field by field, so
+ * a route naming a catalog provider stays configuration-free while a route
+ * neither catalog supplies is fully describable from `cordis.patch.yml`.
  *
  * Strict resolution rejects unserviceable models before settings writes.
  * Deferred resolution retains their diagnostics so stored catalog drift does
@@ -14,6 +14,7 @@
 
 import { builtinProviders, getAllBuiltinModels, getBuiltinModels } from '@earendil-works/pi-ai/providers/all'
 import type { BuiltinProvider } from '@earendil-works/pi-ai/providers/all'
+import { SUPPLEMENTAL_PROVIDERS } from './supplemental-providers.ts'
 import type {
   AnthropicMessagesCompat,
   Api,
@@ -179,13 +180,16 @@ function servesChat(provider: Provider): boolean {
 }
 
 /**
- * Installed catalog providers this adapter serves, by id, constructed once.
+ * Installed and DSH-supplied catalog providers this adapter serves, by id, constructed once.
  * Each entry owns the API implementations for its own models, which is why a
  * catalog route reuses this provider instead of being rebuilt from parts.
  * @returns the catalog provider index, in catalog order.
  */
 function catalogProviders(): Map<string, Provider> {
-  providerIndex ??= new Map(builtinProviders().filter(servesChat).map(provider => [provider.id, provider]))
+  providerIndex ??= new Map([
+    ...builtinProviders().filter(servesChat),
+    ...SUPPLEMENTAL_PROVIDERS,
+  ].map(provider => [provider.id, provider]))
   return providerIndex
 }
 
@@ -215,9 +219,8 @@ export function catalogProviderIds(): readonly string[] {
  * @returns catalog models by id; empty for a route {@link catalogProvider} does not return.
  */
 export function catalogModels(provider: string): Map<string, Model<Api>> {
-  if (!catalogProviders().has(provider)) return new Map()
-  const models = getBuiltinModels(provider as BuiltinProvider) as Model<Api>[]
-  return new Map(models.map(model => [model.id, model]))
+  const models = catalogProvider(provider)?.getModels()
+  return new Map(models?.map(model => [model.id, model]))
 }
 
 /**
